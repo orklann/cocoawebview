@@ -34,9 +34,11 @@ VALUE webview_eval(VALUE self, VALUE code);
 
 @interface CocoaWebview : NSWindow {
     WKWebView *webView;
+    VALUE rb_cocoawebview;
 }
 - (id)initWithFrame:(NSRect)frame;
 - (void)eval:(NSString*)code;
+- (void)setCocoaWebview:(VALUE)view;
 @end
 
 @implementation CocoaWebview
@@ -56,10 +58,14 @@ VALUE webview_eval(VALUE self, VALUE code);
     return self;
 }
 
+- (void)setCocoaWebview:(VALUE)view {
+    rb_cocoawebview = view;
+}
+
 - (void)eval:(NSString*)code {
-    [webView evaluateJavaScript:code completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+    [webView evaluateJavaScript:code completionHandler:^(id result, NSError *error) {
         if (error) {
-            NSLog(@"JavaScript error: %@", error.localizedDescription);
+            NSLog(@"JavaScript error: %@", error);
         }
     }];
 }
@@ -70,13 +76,15 @@ VALUE webview_eval(VALUE self, VALUE code);
 
     [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
 
+    [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
+
     [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
 
     [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
 
     // Create the WKWebView with the configuration
     NSRect contentRect = [[window contentView] bounds];
-    WKWebView *webView = [[WKWebView alloc] initWithFrame:contentRect configuration:config];
+    webView = [[WKWebView alloc] initWithFrame:contentRect configuration:config];
 
     // Enable autoresizing
     [webView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
@@ -90,6 +98,16 @@ VALUE webview_eval(VALUE self, VALUE code);
 
     // Add to window's contentView
     [window setContentView:webView];
+
+    webView.navigationDelegate = self;
+
+    NSString *html = @"<html><body><h1>Hello from WKWebView</h1><script>function sayHello() { console.log('Hello JS!'); }</script></body></html>";
+    [webView loadHTMLString:html baseURL:nil];
+}
+
+// Called when the web view finishes loading
+- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
+    rb_funcall(rb_cocoawebview, rb_intern("webview_did_load"), 0);
 }
 @end
 
@@ -138,6 +156,8 @@ VALUE nsapp_run(VALUE self) {
 VALUE webview_initialize(VALUE self) {
   rb_iv_set(self, "@var", rb_hash_new());
   CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500)];
+
+  [webview setCocoaWebview:self];
 
   // Wrap the Objective-C pointer into a Ruby object
   VALUE wrapper = TypedData_Wrap_Struct(rb_cObject, &cocoawebview_obj_type, webview);

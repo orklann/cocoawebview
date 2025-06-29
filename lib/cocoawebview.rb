@@ -17,5 +17,9 @@ module CocoaWebview
     def get_webview
       @webview
     end
+
+    def webview_did_load
+      puts "CocoaWebview did loaded"
+    end
   end
 end
