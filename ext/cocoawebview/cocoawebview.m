@@ -53,6 +53,7 @@ VALUE webview_eval(VALUE self, VALUE code);
                               backing:NSBackingStoreBuffered
                                 defer:NO];
     if (self) {
+        [self center];
         [self setTitle:@"My Custom Window"];
         [self setDevTool:flag];
         [self setTitlebarAppearsTransparent: YES];
