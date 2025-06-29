@@ -14,4 +14,7 @@ $CFLAGS << " -ObjC"
 # Add Cocoa framework to linker flags
 $LDFLAGS << " -framework Cocoa"
 
+# Add Webview framework to linker flags
+$LDFLAGS << " -framework WebKit"
+
 create_makefile("cocoawebview/cocoawebview")

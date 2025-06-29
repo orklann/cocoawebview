@@ -1,4 +1,5 @@
 #import <Cocoa/Cocoa.h>
+#import <WebKit/WebKit.h>
 #include "cocoawebview.h"
 
 VALUE rb_mCocoawebview;
@@ -31,7 +32,7 @@ VALUE webview_hide(VALUE self);
 @end
 
 @interface CocoaWebview : NSWindow {
-
+    WKWebView *webView;
 }
 - (id)initWithFrame:(NSRect)frame;
 @end
@@ -46,8 +47,35 @@ VALUE webview_hide(VALUE self);
                                 defer:NO];
     if (self) {
         [self setTitle:@"My Custom Window"];
+        [self addWebViewToWindow:self];
     }
     return self;
+}
+
+- (void)addWebViewToWindow:(NSWindow *)window {
+    // Create a configuration if needed
+    WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
+
+    [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
+
+    [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
+
+    [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
+
+    // Create the WKWebView with the configuration
+    NSRect contentRect = [[window contentView] bounds];
+    WKWebView *webView = [[WKWebView alloc] initWithFrame:contentRect configuration:config];
+
+    // Enable autoresizing
+    [webView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
+
+    // Load a URL
+    NSURL *url = [NSURL URLWithString:@"https://www.apple.com"];
+    NSURLRequest *request = [NSURLRequest requestWithURL:url];
+    [webView loadRequest:request];
+
+    // Add to window's contentView
+    [window setContentView:webView];
 }
 @end
 
