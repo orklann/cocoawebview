@@ -72,9 +72,11 @@ VALUE webview_hide(VALUE self);
     [webView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
 
     // Load a URL
+    /*
     NSURL *url = [NSURL URLWithString:@"https://www.apple.com"];
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     [webView loadRequest:request];
+    */
 
     // Add to window's contentView
     [window setContentView:webView];
