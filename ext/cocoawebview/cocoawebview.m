@@ -13,6 +13,7 @@ VALUE nsapp_run(VALUE self);
 VALUE webview_initialize(VALUE self);
 VALUE webview_show(VALUE self);
 VALUE webview_hide(VALUE self);
+VALUE webview_eval(VALUE self, VALUE code);
 
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
@@ -35,6 +36,7 @@ VALUE webview_hide(VALUE self);
     WKWebView *webView;
 }
 - (id)initWithFrame:(NSRect)frame;
+- (void)eval:(NSString*)code;
 @end
 
 @implementation CocoaWebview
@@ -52,6 +54,14 @@ VALUE webview_hide(VALUE self);
         [self addWebViewToWindow:self];
     }
     return self;
+}
+
+- (void)eval:(NSString*)code {
+    [webView evaluateJavaScript:code completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+        if (error) {
+            NSLog(@"JavaScript error: %@", error.localizedDescription);
+        }
+    }];
 }
 
 - (void)addWebViewToWindow:(NSWindow *)window {
@@ -109,6 +119,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "initialize", webview_initialize, 0);
   rb_define_method(rb_mCocoaWebviewClass, "show", webview_show, 0);
   rb_define_method(rb_mCocoaWebviewClass, "hide", webview_hide, 0);
+  rb_define_method(rb_mCocoaWebviewClass, "eval", webview_eval, 1);
 }
 
 VALUE nsapp_initialize(VALUE self) {
@@ -148,4 +159,15 @@ VALUE webview_hide(VALUE self) {
     CocoaWebview *webview;
     TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
     [webview orderOut:nil];
+}
+
+VALUE webview_eval(VALUE self, VALUE code) {
+    const char *js = StringValueCStr(code);
+    NSString *js_code = [[NSString alloc] initWithCString:js encoding:NSUTF8StringEncoding];
+
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    [webview eval:js_code];
 }
