@@ -32,7 +32,7 @@ VALUE webview_eval(VALUE self, VALUE code);
 }
 @end
 
-@interface CocoaWebview : NSWindow {
+@interface CocoaWebview : NSWindow <WKScriptMessageHandler> {
     WKWebView *webView;
     VALUE rb_cocoawebview;
     BOOL showDevTool;
@@ -62,6 +62,15 @@ VALUE webview_eval(VALUE self, VALUE code);
     return self;
 }
 
+- (void)userContentController:(WKUserContentController *)userContentController
+      didReceiveScriptMessage:(WKScriptMessage *)message {
+    if ([message.name isEqualToString:@"native"]) {
+        const char *body = [message.body UTF8String];
+        VALUE rb_body = rb_str_new_cstr(body);
+        rb_funcall(rb_cocoawebview, rb_intern("webview_msg_handler"), 1, rb_body);
+    }
+}
+
 - (void)setDevTool:(BOOL)flag {
     showDevTool = flag;
 }
@@ -79,11 +88,15 @@ VALUE webview_eval(VALUE self, VALUE code);
 }
 
 - (void)addWebViewToWindow:(NSWindow *)window {
+    WKUserContentController *userContentController = [[WKUserContentController alloc] init];
+    [userContentController addScriptMessageHandler:self name:@"native"];
+
     // Create a configuration if needed
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
 
     [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
 
+    config.userContentController = userContentController;
     if (showDevTool) {
         [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
     }
@@ -162,6 +175,7 @@ VALUE nsapp_run(VALUE self) {
 
 VALUE webview_initialize(VALUE self, VALUE debug) {
   rb_iv_set(self, "@var", rb_hash_new());
+  rb_iv_set(self, "@bindings", rb_hash_new());
   BOOL flag = NO;
   if (debug == Qtrue) {
     flag = YES;
