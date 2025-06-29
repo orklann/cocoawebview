@@ -10,7 +10,7 @@ NSApplication *application = nil;
 VALUE nsapp_initialize(VALUE self);
 VALUE nsapp_run(VALUE self);
 
-VALUE webview_initialize(VALUE self);
+VALUE webview_initialize(VALUE self, VALUE debug);
 VALUE webview_show(VALUE self);
 VALUE webview_hide(VALUE self);
 VALUE webview_eval(VALUE self, VALUE code);
@@ -35,14 +35,16 @@ VALUE webview_eval(VALUE self, VALUE code);
 @interface CocoaWebview : NSWindow {
     WKWebView *webView;
     VALUE rb_cocoawebview;
+    BOOL showDevTool;
 }
-- (id)initWithFrame:(NSRect)frame;
+- (void)setDevTool:(BOOL)flag;
+- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag;
 - (void)eval:(NSString*)code;
 - (void)setCocoaWebview:(VALUE)view;
 @end
 
 @implementation CocoaWebview
-- (id)initWithFrame:(NSRect)frame{
+- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag {
     int style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                  NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskFullSizeContentView;
     style &= ~NSWindowStyleMaskFullScreen;
@@ -52,10 +54,15 @@ VALUE webview_eval(VALUE self, VALUE code);
                                 defer:NO];
     if (self) {
         [self setTitle:@"My Custom Window"];
+        [self setDevTool:flag];
         [self setTitlebarAppearsTransparent: YES];
         [self addWebViewToWindow:self];
     }
     return self;
+}
+
+- (void)setDevTool:(BOOL)flag {
+    showDevTool = flag;
 }
 
 - (void)setCocoaWebview:(VALUE)view {
@@ -76,7 +83,9 @@ VALUE webview_eval(VALUE self, VALUE code);
 
     [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
 
-    [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
+    if (showDevTool) {
+        [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
+    }
 
     [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
 
@@ -134,7 +143,7 @@ Init_cocoawebview(void)
 
   /* CocoaWebview */
   rb_mCocoaWebviewClass = rb_define_class_under(rb_mCocoawebview, "CocoaWebview", rb_cObject);
-  rb_define_method(rb_mCocoaWebviewClass, "initialize", webview_initialize, 0);
+  rb_define_method(rb_mCocoaWebviewClass, "initialize", webview_initialize, 1);
   rb_define_method(rb_mCocoaWebviewClass, "show", webview_show, 0);
   rb_define_method(rb_mCocoaWebviewClass, "hide", webview_hide, 0);
   rb_define_method(rb_mCocoaWebviewClass, "eval", webview_eval, 1);
@@ -153,9 +162,15 @@ VALUE nsapp_run(VALUE self) {
     [application run];
 }
 
-VALUE webview_initialize(VALUE self) {
+VALUE webview_initialize(VALUE self, VALUE debug) {
   rb_iv_set(self, "@var", rb_hash_new());
-  CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500)];
+  BOOL flag = NO;
+  if (debug == Qtrue) {
+    flag = YES;
+  } else {
+    flag = NO;
+  }
+  CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500) debug:flag];
 
   [webview setCocoaWebview:self];
 
