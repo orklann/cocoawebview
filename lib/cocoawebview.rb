@@ -12,4 +12,10 @@ module CocoaWebview
       puts "NSApp did launch"
     end
   end
+
+  class CocoaWebview
+    def get_webview
+      @webview
+    end
+  end
 end
