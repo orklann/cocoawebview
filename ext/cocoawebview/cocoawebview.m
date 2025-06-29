@@ -110,9 +110,6 @@ VALUE webview_eval(VALUE self, VALUE code);
     [window setContentView:webView];
 
     webView.navigationDelegate = self;
-
-    NSString *html = @"<html><body><h1>Hello from WKWebView</h1><script>function sayHello() { console.log('Hello JS!'); }</script></body></html>";
-    [webView loadHTMLString:html baseURL:nil];
 }
 
 // Called when the web view finishes loading
