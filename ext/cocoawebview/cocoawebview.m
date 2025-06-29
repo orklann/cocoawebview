@@ -62,6 +62,15 @@ VALUE webview_eval(VALUE self, VALUE code);
     return self;
 }
 
+- (void)close {
+    [self orderOut:nil]; // Hide instead of destroy
+}
+
+- (void)windowWillClose:(NSNotification *)notification {
+    // Prevent release by hiding the window instead
+    [notification.object orderOut:nil];
+}
+
 - (void)userContentController:(WKUserContentController *)userContentController
       didReceiveScriptMessage:(WKScriptMessage *)message {
     if ([message.name isEqualToString:@"native"]) {
@@ -184,6 +193,7 @@ VALUE webview_initialize(VALUE self, VALUE debug) {
   }
   CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500) debug:flag];
 
+  [webview setReleasedWhenClosed:NO];
   [webview setCocoaWebview:self];
 
   // Wrap the Objective-C pointer into a Ruby object
