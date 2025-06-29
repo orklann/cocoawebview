@@ -39,14 +39,16 @@ VALUE webview_hide(VALUE self);
 
 @implementation CocoaWebview
 - (id)initWithFrame:(NSRect)frame{
+    int style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                 NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskFullSizeContentView;
+    style &= ~NSWindowStyleMaskFullScreen;
     self = [super initWithContentRect:frame
-                            styleMask:(NSWindowStyleMaskTitled |
-                                       NSWindowStyleMaskClosable |
-                                       NSWindowStyleMaskResizable)
+                            styleMask:style
                               backing:NSBackingStoreBuffered
                                 defer:NO];
     if (self) {
         [self setTitle:@"My Custom Window"];
+        [self setTitlebarAppearsTransparent: YES];
         [self addWebViewToWindow:self];
     }
     return self;
