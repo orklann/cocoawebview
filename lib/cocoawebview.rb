@@ -24,11 +24,11 @@ module CocoaWebview
   class CocoaWebview
     attr_accessor :callback
 
-    def self.create(debug: false, min: true, max: true, close: true, &block)
+    def self.create(debug: false, min: true, resize: true, close: true, &block)
       style = NSWindowStyleMaskTitled | NSWindowStyleMaskFullSizeContentView
 
       style = style | NSWindowStyleMaskMiniaturizable if min
-      style = style | NSWindowStyleMaskResizable if max
+      style = style | NSWindowStyleMaskResizable if resize
       style = style | NSWindowStyleMaskClosable if close
 
       style &= ~NSWindowStyleMaskFullScreen
