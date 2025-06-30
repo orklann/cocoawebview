@@ -19,6 +19,7 @@ VALUE webview_get_size(VALUE self);
 VALUE webview_set_pos(VALUE self, VALUE x, VALUE y);
 VALUE webview_get_pos(VALUE self);
 VALUE webview_dragging(VALUE self);
+VALUE webview_set_title(VALUE self, VALUE title);
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     VALUE app;
@@ -62,6 +63,7 @@ VALUE webview_dragging(VALUE self);
         [self setTitle:@"My Custom Window"];
         [self setDevTool:flag];
         [self setTitlebarAppearsTransparent: YES];
+        [self setTitleVisibility:NSWindowTitleHidden];
         [self addWebViewToWindow:self];
     }
     return self;
@@ -182,6 +184,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "set_pos", webview_set_pos, 2);
   rb_define_method(rb_mCocoaWebviewClass, "get_pos", webview_get_pos, 0);
   rb_define_method(rb_mCocoaWebviewClass, "dragging", webview_dragging, 0);
+  rb_define_method(rb_mCocoaWebviewClass, "set_title", webview_set_title, 1);
 }
 
 VALUE nsapp_initialize(VALUE self) {
@@ -310,4 +313,14 @@ VALUE webview_dragging(VALUE self) {
     TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
 
     [webview dragging];
+}
+
+VALUE webview_set_title(VALUE self, VALUE title) {
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    const char *c_title = StringValueCStr(title);
+    NSString *title_str = [[NSString alloc] initWithCString:c_title encoding:NSUTF8StringEncoding];
+    [webview setTitle:title_str];
 }
