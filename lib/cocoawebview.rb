@@ -5,6 +5,13 @@ require_relative "cocoawebview/version"
 require_relative "cocoawebview/cocoawebview"
 
 module CocoaWebview
+  NSWindowStyleMaskResizable = 8
+  NSWindowStyleMaskMiniaturizable = 4
+  NSWindowStyleMaskTitled = 1
+  NSWindowStyleMaskClosable = 2
+  NSWindowStyleMaskFullSizeContentView = (1 << 15)
+  NSWindowStyleMaskFullScreen = (1 << 14)
+
   class Error < StandardError; end
   # Your code goes here...
 
@@ -15,6 +22,22 @@ module CocoaWebview
   end
 
   class CocoaWebview
+    attr_accessor :callback
+
+    def self.create(debug: false, min: true, max: true, close: true, &block)
+      style = NSWindowStyleMaskTitled | NSWindowStyleMaskFullSizeContentView
+
+      style = style | NSWindowStyleMaskMiniaturizable if min
+      style = style | NSWindowStyleMaskResizable if max
+      style = style | NSWindowStyleMaskClosable if close
+
+      style &= ~NSWindowStyleMaskFullScreen
+
+      webview = new(debug, style)
+      webview.callback = block
+      webview
+    end
+
     def get_webview
       @webview
     end
