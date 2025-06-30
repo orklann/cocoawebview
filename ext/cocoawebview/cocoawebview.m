@@ -18,6 +18,7 @@ VALUE webview_set_size(VALUE self, VALUE width, VALUE height);
 VALUE webview_get_size(VALUE self);
 VALUE webview_set_pos(VALUE self, VALUE x, VALUE y);
 VALUE webview_get_pos(VALUE self);
+VALUE webview_dragging(VALUE self);
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     VALUE app;
@@ -44,6 +45,7 @@ VALUE webview_get_pos(VALUE self);
 - (id)initWithFrame:(NSRect)frame debug:(BOOL)flag;
 - (void)eval:(NSString*)code;
 - (void)setCocoaWebview:(VALUE)view;
+- (void)dragging;
 @end
 
 @implementation CocoaWebview
@@ -72,6 +74,11 @@ VALUE webview_get_pos(VALUE self);
 - (void)windowWillClose:(NSNotification *)notification {
     // Prevent release by hiding the window instead
     [notification.object orderOut:nil];
+}
+
+- (void)dragging {
+    NSEvent *event = [NSApp currentEvent];
+    [self performWindowDragWithEvent:event];
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController
@@ -174,6 +181,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "get_size", webview_get_size, 0);
   rb_define_method(rb_mCocoaWebviewClass, "set_pos", webview_set_pos, 2);
   rb_define_method(rb_mCocoaWebviewClass, "get_pos", webview_get_pos, 0);
+  rb_define_method(rb_mCocoaWebviewClass, "dragging", webview_dragging, 0);
 }
 
 VALUE nsapp_initialize(VALUE self) {
@@ -294,4 +302,12 @@ VALUE webview_get_pos(VALUE self) {
     rb_ary_push(ary, rb_x);
     rb_ary_push(ary, rb_y);
     return ary;
+}
+
+VALUE webview_dragging(VALUE self) {
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    [webview dragging];
 }
