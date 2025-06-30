@@ -15,6 +15,7 @@ VALUE webview_show(VALUE self);
 VALUE webview_hide(VALUE self);
 VALUE webview_eval(VALUE self, VALUE code);
 VALUE webview_set_size(VALUE self, VALUE width, VALUE height);
+VALUE webview_get_size(VALUE self);
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     VALUE app;
@@ -168,6 +169,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "hide", webview_hide, 0);
   rb_define_method(rb_mCocoaWebviewClass, "eval", webview_eval, 1);
   rb_define_method(rb_mCocoaWebviewClass, "set_size", webview_set_size, 2);
+  rb_define_method(rb_mCocoaWebviewClass, "get_size", webview_get_size, 0);
 }
 
 VALUE nsapp_initialize(VALUE self) {
@@ -241,4 +243,22 @@ VALUE webview_set_size(VALUE self, VALUE width, VALUE height) {
     NSRect frame = [webview frame];
     frame.size = NSMakeSize(c_width, c_height);
     [webview setFrame:frame display:YES];
+}
+
+VALUE webview_get_size(VALUE self) {
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    NSRect frame = [webview frame];
+    int width = (int)frame.size.width;
+    int height = (int)frame.size.height;
+
+    VALUE rb_width = INT2NUM(width);
+    VALUE rb_height = INT2NUM(height);
+
+    VALUE ary = rb_ary_new();
+    rb_ary_push(ary, rb_width);
+    rb_ary_push(ary, rb_height);
+    return ary;
 }
