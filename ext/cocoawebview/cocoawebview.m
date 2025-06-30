@@ -16,6 +16,7 @@ VALUE webview_hide(VALUE self);
 VALUE webview_eval(VALUE self, VALUE code);
 VALUE webview_set_size(VALUE self, VALUE width, VALUE height);
 VALUE webview_get_size(VALUE self);
+VALUE webview_set_pos(VALUE self, VALUE x, VALUE y);
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     VALUE app;
@@ -170,6 +171,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "eval", webview_eval, 1);
   rb_define_method(rb_mCocoaWebviewClass, "set_size", webview_set_size, 2);
   rb_define_method(rb_mCocoaWebviewClass, "get_size", webview_get_size, 0);
+  rb_define_method(rb_mCocoaWebviewClass, "set_pos", webview_set_pos, 2);
 }
 
 VALUE nsapp_initialize(VALUE self) {
@@ -261,4 +263,16 @@ VALUE webview_get_size(VALUE self) {
     rb_ary_push(ary, rb_width);
     rb_ary_push(ary, rb_height);
     return ary;
+}
+
+VALUE webview_set_pos(VALUE self, VALUE x, VALUE y) {
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    int c_x = NUM2INT(x);
+    int c_y = NUM2INT(y);
+
+    NSPoint newOrigin = NSMakePoint(c_x, c_y);
+    [webview setFrameOrigin:newOrigin];
 }
