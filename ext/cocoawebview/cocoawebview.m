@@ -9,6 +9,7 @@ NSApplication *application = nil;
 
 VALUE nsapp_initialize(VALUE self);
 VALUE nsapp_run(VALUE self);
+VALUE nsapp_exit(VALUE self);
 
 VALUE webview_initialize(VALUE self, VALUE debug, VALUE style);
 VALUE webview_show(VALUE self);
@@ -170,6 +171,7 @@ Init_cocoawebview(void)
   rb_mNSAppClass = rb_define_class_under(rb_mCocoawebview, "NSApp", rb_cObject);
   rb_define_method(rb_mNSAppClass, "initialize", nsapp_initialize, 0);
   rb_define_method(rb_mNSAppClass, "run", nsapp_run, 0);
+  rb_define_method(rb_mNSAppClass, "exit", nsapp_exit, 0);
 
   /* CocoaWebview */
   rb_mCocoaWebviewClass = rb_define_class_under(rb_mCocoawebview, "CocoaWebview", rb_cObject);
@@ -197,6 +199,10 @@ VALUE nsapp_initialize(VALUE self) {
 
 VALUE nsapp_run(VALUE self) {
     [application run];
+}
+
+VALUE nsapp_exit(VALUE self) {
+    [[NSApplication sharedApplication] terminate:nil];
 }
 
 VALUE webview_initialize(VALUE self, VALUE debug, VALUE style) {
