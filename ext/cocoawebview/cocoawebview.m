@@ -22,6 +22,7 @@ VALUE webview_get_pos(VALUE self);
 VALUE webview_dragging(VALUE self);
 VALUE webview_set_title(VALUE self, VALUE title);
 VALUE webview_center(VALUE self);
+VALUE webview_is_visible(VALUE self);
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     VALUE app;
@@ -186,6 +187,8 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "dragging", webview_dragging, 0);
   rb_define_method(rb_mCocoaWebviewClass, "set_title", webview_set_title, 1);
   rb_define_method(rb_mCocoaWebviewClass, "center", webview_center, 0);
+  rb_define_method(rb_mCocoaWebviewClass, "visible?", webview_is_visible, 0);
+
 }
 
 VALUE nsapp_initialize(VALUE self) {
@@ -338,4 +341,16 @@ VALUE webview_center(VALUE self) {
     TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
 
     [webview center];
+}
+
+VALUE webview_is_visible(VALUE self) {
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    if ([webview isVisible]) {
+        return Qtrue;
+    } else {
+        return Qfalse;
+    }
 }
