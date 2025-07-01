@@ -23,6 +23,7 @@ VALUE webview_dragging(VALUE self);
 VALUE webview_set_title(VALUE self, VALUE title);
 VALUE webview_center(VALUE self);
 VALUE webview_is_visible(VALUE self);
+VALUE webview_set_topmost(VALUE self, VALUE topmost);
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     VALUE app;
@@ -64,7 +65,6 @@ VALUE webview_is_visible(VALUE self);
         [self setDevTool:flag];
         [self setTitlebarAppearsTransparent: YES];
         [self setTitleVisibility:NSWindowTitleHidden];
-        [self setLevel:NSFloatingWindowLevel];
         [self addWebViewToWindow:self];
     }
     return self;
@@ -189,6 +189,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "set_title", webview_set_title, 1);
   rb_define_method(rb_mCocoaWebviewClass, "center", webview_center, 0);
   rb_define_method(rb_mCocoaWebviewClass, "visible?", webview_is_visible, 0);
+  rb_define_method(rb_mCocoaWebviewClass, "set_topmost", webview_set_topmost, 1);
 
 }
 
@@ -353,5 +354,19 @@ VALUE webview_is_visible(VALUE self) {
         return Qtrue;
     } else {
         return Qfalse;
+    }
+}
+
+VALUE webview_set_topmost(VALUE self, VALUE topmost) {
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    bool c_topmost = RTEST(topmost);
+
+    if (c_topmost) {
+        [webview setLevel:NSFloatingWindowLevel];
+    } else {
+        [webview setLevel:NSNormalWindowLevel];
     }
 }
