@@ -11,7 +11,7 @@ VALUE nsapp_initialize(VALUE self);
 VALUE nsapp_run(VALUE self);
 VALUE nsapp_exit(VALUE self);
 
-VALUE webview_initialize(VALUE self, VALUE debug, VALUE style);
+VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons);
 VALUE webview_show(VALUE self);
 VALUE webview_hide(VALUE self);
 VALUE webview_eval(VALUE self, VALUE code);
@@ -45,16 +45,18 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
     WKWebView *webView;
     VALUE rb_cocoawebview;
     BOOL showDevTool;
+    BOOL shouldMoveTitleButtons;
 }
+- (void)setShouldMoveTitleButtons:(BOOL)flag;
 - (void)setDevTool:(BOOL)flag;
-- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style;
+- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons;
 - (void)eval:(NSString*)code;
 - (void)setCocoaWebview:(VALUE)view;
 - (void)dragging;
 @end
 
 @implementation CocoaWebview
-- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style{
+- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons{
     self = [super initWithContentRect:frame
                             styleMask:style
                               backing:NSBackingStoreBuffered
@@ -66,8 +68,40 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
         [self setTitlebarAppearsTransparent: YES];
         [self setTitleVisibility:NSWindowTitleHidden];
         [self addWebViewToWindow:self];
+        [self setShouldMoveTitleButtons:moveTitleButtons];
+        if (moveTitleButtons) {
+            [self moveWindowButtonsForWindow:self];
+        }
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(windowDidResize:)
+                                                     name:NSWindowDidResizeNotification
+                                                   object:self];
     }
     return self;
+}
+
+- (void)setShouldMoveTitleButtons:(BOOL)flag {
+    shouldMoveTitleButtons = flag;
+}
+
+- (void)windowDidResize:(NSNotification *)notification {
+    if (shouldMoveTitleButtons) {
+        [self moveWindowButtonsForWindow:self];
+    }
+}
+
+- (void)moveWindowButtonsForWindow:(NSWindow *)window {
+    //Close Button
+    NSButton *closeButton = [window standardWindowButton:NSWindowCloseButton];
+    [closeButton setFrameOrigin:NSMakePoint(closeButton.frame.origin.x + 10, closeButton.frame.origin.y - 10)];
+
+    //Minimize Button
+    NSButton *minimizeButton = [window standardWindowButton:NSWindowMiniaturizeButton];
+    [minimizeButton setFrameOrigin:NSMakePoint(minimizeButton.frame.origin.x + 10, minimizeButton.frame.origin.y - 10)];
+
+    //Zoom Button
+    NSButton *zoomButton = [window standardWindowButton:NSWindowZoomButton];
+    [zoomButton setFrameOrigin:NSMakePoint(zoomButton.frame.origin.x + 10, zoomButton.frame.origin.y - 10)];
 }
 
 - (void)close {
@@ -177,7 +211,7 @@ Init_cocoawebview(void)
 
   /* CocoaWebview */
   rb_mCocoaWebviewClass = rb_define_class_under(rb_mCocoawebview, "CocoaWebview", rb_cObject);
-  rb_define_method(rb_mCocoaWebviewClass, "initialize", webview_initialize, 2);
+  rb_define_method(rb_mCocoaWebviewClass, "initialize", webview_initialize, 3);
   rb_define_method(rb_mCocoaWebviewClass, "show", webview_show, 0);
   rb_define_method(rb_mCocoaWebviewClass, "hide", webview_hide, 0);
   rb_define_method(rb_mCocoaWebviewClass, "eval", webview_eval, 1);
@@ -210,7 +244,7 @@ VALUE nsapp_exit(VALUE self) {
     [[NSApplication sharedApplication] terminate:nil];
 }
 
-VALUE webview_initialize(VALUE self, VALUE debug, VALUE style) {
+VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons) {
   rb_iv_set(self, "@var", rb_hash_new());
   rb_iv_set(self, "@bindings", rb_hash_new());
   BOOL flag = NO;
@@ -220,8 +254,14 @@ VALUE webview_initialize(VALUE self, VALUE debug, VALUE style) {
     flag = NO;
   }
 
+  BOOL c_move_title_buttons = NO;
+  if (move_title_buttons == Qtrue) {
+    c_move_title_buttons = YES;
+  } else {
+    c_move_title_buttons = NO;
+  }
   int c_style = NUM2INT(style);
-  CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500) debug:flag style:c_style];
+  CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500) debug:flag style:c_style moveTitleButtons:c_move_title_buttons];
 
   [webview setReleasedWhenClosed:NO];
   [webview setCocoaWebview:self];
