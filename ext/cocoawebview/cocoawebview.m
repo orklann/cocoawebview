@@ -64,6 +64,7 @@ VALUE webview_is_visible(VALUE self);
         [self setDevTool:flag];
         [self setTitlebarAppearsTransparent: YES];
         [self setTitleVisibility:NSWindowTitleHidden];
+        [self setLevel:NSFloatingWindowLevel];
         [self addWebViewToWindow:self];
     }
     return self;
