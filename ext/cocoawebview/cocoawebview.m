@@ -238,6 +238,7 @@ VALUE webview_show(VALUE self) {
     VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
     CocoaWebview *webview;
     TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+    [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
     [webview makeKeyAndOrderFront:nil];
 }
 
