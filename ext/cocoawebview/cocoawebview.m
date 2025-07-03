@@ -25,6 +25,19 @@ VALUE webview_center(VALUE self);
 VALUE webview_is_visible(VALUE self);
 VALUE webview_set_topmost(VALUE self, VALUE topmost);
 
+@interface CocoaWKWebView : WKWebView
+@property (nonatomic, strong) NSEvent *lastMouseDownEvent;
+@end
+
+@implementation CocoaWKWebView
+
+- (void)mouseDown:(NSEvent *)event {
+    self.lastMouseDownEvent = event;
+    [super mouseDown:event];
+}
+@end
+
+
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     VALUE app;
 }
@@ -42,7 +55,7 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
 @end
 
 @interface CocoaWebview : NSWindow <WKScriptMessageHandler> {
-    WKWebView *webView;
+    CocoaWKWebView *webView;
     VALUE rb_cocoawebview;
     BOOL showDevTool;
     BOOL shouldMoveTitleButtons;
@@ -163,7 +176,7 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
 
     // Create the WKWebView with the configuration
     NSRect contentRect = [[window contentView] bounds];
-    webView = [[WKWebView alloc] initWithFrame:contentRect configuration:config];
+    webView = [[CocoaWKWebView alloc] initWithFrame:contentRect configuration:config];
 
     // Enable autoresizing
     [webView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
