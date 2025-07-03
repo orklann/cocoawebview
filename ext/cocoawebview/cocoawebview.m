@@ -67,6 +67,11 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
 - (void)setObj:(VALUE)o {
     rb_cocoawebview = o;
 }
+
+- (void)drawRect:(NSRect)dirtyRect {
+    [[NSColor clearColor] setFill];
+    NSRectFill(dirtyRect);
+}
 @end
 
 @interface CocoaWKWebView : WKWebView
@@ -239,6 +244,7 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
     */
 
     // Add to window's contentView
+    //[[window contentView] addSubview:fileDropView];
     [[window contentView] addSubview: webView];
     [[window contentView] addSubview:fileDropView positioned:NSWindowAbove relativeTo:webView];
 
