@@ -25,6 +25,50 @@ VALUE webview_center(VALUE self);
 VALUE webview_is_visible(VALUE self);
 VALUE webview_set_topmost(VALUE self, VALUE topmost);
 
+@interface FileDropContainerView : NSView {
+    VALUE rb_cocoawebview;
+}
+
+- (void)setObj:(VALUE)o;
+@end
+
+@implementation FileDropContainerView
+
+- (instancetype)initWithFrame:(NSRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self registerForDraggedTypes:@[NSPasteboardTypeFileURL]];
+    }
+    return self;
+}
+
+- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender {
+    return NSDragOperationCopy;
+}
+
+- (BOOL)prepareForDragOperation:(id<NSDraggingInfo>)sender {
+    return YES;
+}
+
+- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender {
+    NSPasteboard *pasteboard = [sender draggingPasteboard];
+    NSArray<NSURL *> *fileURLs = [pasteboard readObjectsForClasses:@[[NSURL class]]
+                                                           options:@{NSPasteboardURLReadingFileURLsOnlyKey: @YES}];
+
+    if (fileURLs.count > 0) {
+        NSString *filePath = fileURLs[0].path;
+        VALUE ruby_file_path = rb_str_new_cstr([filePath UTF8String]);
+        rb_funcall(rb_cocoawebview, rb_intern("file_did_drop"), 1, ruby_file_path);
+        return YES;
+    }
+    return NO;
+}
+
+- (void)setObj:(VALUE)o {
+    rb_cocoawebview = o;
+}
+@end
+
 @interface CocoaWKWebView : WKWebView
 @property (nonatomic, strong) NSEvent *lastMouseDownEvent;
 @end
@@ -59,6 +103,7 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
     VALUE rb_cocoawebview;
     BOOL showDevTool;
     BOOL shouldMoveTitleButtons;
+    FileDropContainerView *fileDropView;
 }
 - (void)setShouldMoveTitleButtons:(BOOL)flag;
 - (void)setDevTool:(BOOL)flag;
@@ -146,6 +191,7 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
 
 - (void)setCocoaWebview:(VALUE)view {
     rb_cocoawebview = view;
+    [fileDropView setObj:view];
 }
 
 - (void)eval:(NSString*)code {
@@ -157,6 +203,11 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
 }
 
 - (void)addWebViewToWindow:(NSWindow *)window {
+    NSRect contentRect = [[window contentView] bounds];
+
+    fileDropView = [[FileDropContainerView alloc] initWithFrame:contentRect];
+    fileDropView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+
     WKUserContentController *userContentController = [[WKUserContentController alloc] init];
     [userContentController addScriptMessageHandler:self name:@"native"];
 
@@ -175,7 +226,6 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
     [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
 
     // Create the WKWebView with the configuration
-    NSRect contentRect = [[window contentView] bounds];
     webView = [[CocoaWKWebView alloc] initWithFrame:contentRect configuration:config];
 
     // Enable autoresizing
@@ -189,7 +239,8 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
     */
 
     // Add to window's contentView
-    [window setContentView:webView];
+    [[window contentView] addSubview: webView];
+    [[window contentView] addSubview:fileDropView positioned:NSWindowAbove relativeTo:webView];
 
     webView.navigationDelegate = self;
 }

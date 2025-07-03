@@ -46,6 +46,10 @@ module CocoaWebview
       puts "CocoaWebview did loaded"
     end
 
+    def file_did_drop(file_path)
+      puts "#{file_path} dropped"
+    end
+
     def bind(name, &block)
       param_info = block.parameters
       param_count = param_info.count { |type, _| type == :req || type == :opt }
