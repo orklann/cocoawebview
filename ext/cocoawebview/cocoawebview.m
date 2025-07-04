@@ -24,6 +24,7 @@ VALUE webview_set_title(VALUE self, VALUE title);
 VALUE webview_center(VALUE self);
 VALUE webview_is_visible(VALUE self);
 VALUE webview_set_topmost(VALUE self, VALUE topmost);
+VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
 
 @interface FileDropContainerView : NSView {
     VALUE rb_cocoawebview;
@@ -244,7 +245,6 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost);
     */
 
     // Add to window's contentView
-    //[[window contentView] addSubview:fileDropView];
     [[window contentView] addSubview: webView];
     [[window contentView] addSubview:fileDropView positioned:NSWindowAbove relativeTo:webView];
 
@@ -294,6 +294,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "center", webview_center, 0);
   rb_define_method(rb_mCocoaWebviewClass, "visible?", webview_is_visible, 0);
   rb_define_method(rb_mCocoaWebviewClass, "set_topmost", webview_set_topmost, 1);
+  rb_define_method(rb_mCocoaWebviewClass, "set_bg", webview_set_bg, 4);
 
 }
 
@@ -480,4 +481,21 @@ VALUE webview_set_topmost(VALUE self, VALUE topmost) {
     } else {
         [webview setLevel:NSNormalWindowLevel];
     }
+}
+
+VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a) {
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    double c_r = NUM2DBL(r);
+    double c_g = NUM2DBL(g);
+    double c_b = NUM2DBL(b);
+    double c_a = NUM2DBL(a);
+
+    NSColor *rgbColor = [NSColor colorWithSRGBRed:c_r
+                                        green:c_g
+                                         blue:c_b
+                                        alpha:c_a];
+    [webview setBackgroundColor:rgbColor];
 }
