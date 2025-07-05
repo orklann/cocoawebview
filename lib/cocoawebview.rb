@@ -46,8 +46,9 @@ module CocoaWebview
       puts "CocoaWebview did loaded"
     end
 
-    def file_did_drop(file_path)
-      puts "#{file_path} dropped"
+    def file_did_drop(files)
+      puts "Dropped below files:"
+      puts "#{files}"
     end
 
     def bind(name, &block)

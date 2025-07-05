@@ -56,10 +56,15 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
     NSArray<NSURL *> *fileURLs = [pasteboard readObjectsForClasses:@[[NSURL class]]
                                                            options:@{NSPasteboardURLReadingFileURLsOnlyKey: @YES}];
 
-    if (fileURLs.count > 0) {
-        NSString *filePath = fileURLs[0].path;
+    VALUE files = rb_ary_new();
+    for (int i = 0; i < fileURLs.count; i++) {
+        NSString *filePath = fileURLs[i].path;
         VALUE ruby_file_path = rb_str_new_cstr([filePath UTF8String]);
-        rb_funcall(rb_cocoawebview, rb_intern("file_did_drop"), 1, ruby_file_path);
+        rb_ary_push(files, ruby_file_path);
+    }
+
+    if (fileURLs.count > 0) {
+        rb_funcall(rb_cocoawebview, rb_intern("file_did_drop"), 1, files);
         return YES;
     }
     return NO;
