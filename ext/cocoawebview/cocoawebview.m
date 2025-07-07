@@ -104,6 +104,10 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
     app = a;
 }
 
+- (void)applicationDidBecomeActive:(NSNotification *)notification {
+    rb_funcall(app, rb_intern("dock_did_click"), 0);
+}
+
 - (BOOL)applicationShouldHandleReopen:(NSApplication *)sender hasVisibleWindows:(BOOL)flag {
     rb_funcall(app, rb_intern("dock_did_click"), 0);
     return YES;
