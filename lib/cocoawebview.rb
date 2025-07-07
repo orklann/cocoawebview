@@ -19,6 +19,10 @@ module CocoaWebview
     def app_did_launch
       puts "NSApp did launch"
     end
+
+    def dock_did_click
+      puts "Dock icon clicked"
+    end
   end
 
   class CocoaWebview
