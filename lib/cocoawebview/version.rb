@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module Cocoawebview
-  VERSION = "0.3.11"
+  VERSION = "0.3.13"
 end

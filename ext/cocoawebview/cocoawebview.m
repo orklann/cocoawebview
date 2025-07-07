@@ -104,11 +104,15 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
     app = a;
 }
 
-- (void)applicationDidBecomeActive:(NSNotification *)notification {
+- (void)appBecameActive:(NSNotification *)notification {
     rb_funcall(app, rb_intern("dock_did_click"), 0);
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
+   [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(appBecameActive:)
+                                                 name:NSApplicationDidBecomeActiveNotification
+                                               object:nil];
     rb_funcall(app, rb_intern("app_did_launch"), 0);
 }
 @end
