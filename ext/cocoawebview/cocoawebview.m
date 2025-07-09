@@ -11,7 +11,7 @@ VALUE nsapp_initialize(VALUE self);
 VALUE nsapp_run(VALUE self);
 VALUE nsapp_exit(VALUE self);
 
-VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons);
+VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons, VALUE delta_y);
 VALUE webview_show(VALUE self);
 VALUE webview_hide(VALUE self);
 VALUE webview_eval(VALUE self, VALUE code);
@@ -120,17 +120,19 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
     BOOL showDevTool;
     BOOL shouldMoveTitleButtons;
     FileDropContainerView *fileDropView;
+    int deltaY;
 }
 - (void)setShouldMoveTitleButtons:(BOOL)flag;
 - (void)setDevTool:(BOOL)flag;
-- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons;
+- (void)setDeltaY:(int)dy;
+- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons deltaY:(int)dy;
 - (void)eval:(NSString*)code;
 - (void)setCocoaWebview:(VALUE)view;
 - (void)dragging;
 @end
 
 @implementation CocoaWebview
-- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons{
+- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons deltaY:(int)dy {
     self = [super initWithContentRect:frame
                             styleMask:style
                               backing:NSBackingStoreBuffered
@@ -139,6 +141,7 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
         [self center];
         [self setTitle:@"My Custom Window"];
         [self setDevTool:flag];
+        [self setDeltaY:dy];
         [self setTitlebarAppearsTransparent: YES];
         [self setTitleVisibility:NSWindowTitleHidden];
         [self addWebViewToWindow:self];
@@ -154,6 +157,10 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
     return self;
 }
 
+- (void)setDeltaY:(int)dy {
+    deltaY = dy;
+}
+
 - (void)setShouldMoveTitleButtons:(BOOL)flag {
     shouldMoveTitleButtons = flag;
 }
@@ -167,15 +174,15 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
 - (void)moveWindowButtonsForWindow:(NSWindow *)window {
     //Close Button
     NSButton *closeButton = [window standardWindowButton:NSWindowCloseButton];
-    [closeButton setFrameOrigin:NSMakePoint(closeButton.frame.origin.x + 10, closeButton.frame.origin.y - 10)];
+    [closeButton setFrameOrigin:NSMakePoint(closeButton.frame.origin.x + 10, closeButton.frame.origin.y - deltaY)];
 
     //Minimize Button
     NSButton *minimizeButton = [window standardWindowButton:NSWindowMiniaturizeButton];
-    [minimizeButton setFrameOrigin:NSMakePoint(minimizeButton.frame.origin.x + 10, minimizeButton.frame.origin.y - 10)];
+    [minimizeButton setFrameOrigin:NSMakePoint(minimizeButton.frame.origin.x + 10, minimizeButton.frame.origin.y - deltaY)];
 
     //Zoom Button
     NSButton *zoomButton = [window standardWindowButton:NSWindowZoomButton];
-    [zoomButton setFrameOrigin:NSMakePoint(zoomButton.frame.origin.x + 10, zoomButton.frame.origin.y - 10)];
+    [zoomButton setFrameOrigin:NSMakePoint(zoomButton.frame.origin.x + 10, zoomButton.frame.origin.y - deltaY)];
 }
 
 - (void)close {
@@ -291,7 +298,7 @@ Init_cocoawebview(void)
 
   /* CocoaWebview */
   rb_mCocoaWebviewClass = rb_define_class_under(rb_mCocoawebview, "CocoaWebview", rb_cObject);
-  rb_define_method(rb_mCocoaWebviewClass, "initialize", webview_initialize, 3);
+  rb_define_method(rb_mCocoaWebviewClass, "initialize", webview_initialize, 4);
   rb_define_method(rb_mCocoaWebviewClass, "show", webview_show, 0);
   rb_define_method(rb_mCocoaWebviewClass, "hide", webview_hide, 0);
   rb_define_method(rb_mCocoaWebviewClass, "eval", webview_eval, 1);
@@ -325,7 +332,7 @@ VALUE nsapp_exit(VALUE self) {
     [[NSApplication sharedApplication] terminate:nil];
 }
 
-VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons) {
+VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons, VALUE delta_y) {
   rb_iv_set(self, "@var", rb_hash_new());
   rb_iv_set(self, "@bindings", rb_hash_new());
   BOOL flag = NO;
@@ -342,7 +349,8 @@ VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_
     c_move_title_buttons = NO;
   }
   int c_style = NUM2INT(style);
-  CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500) debug:flag style:c_style moveTitleButtons:c_move_title_buttons];
+  int c_delta_y = NUM2INT(delta_y);
+  CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500) debug:flag style:c_style moveTitleButtons:c_move_title_buttons deltaY:c_delta_y];
 
   [webview setReleasedWhenClosed:NO];
   [webview setCocoaWebview:self];

@@ -28,7 +28,7 @@ module CocoaWebview
   class CocoaWebview
     attr_accessor :callback
 
-    def self.create(debug: false, min: true, resize: true, close: true, move_title_buttons: false, &block)
+    def self.create(debug: false, min: true, resize: true, close: true, move_title_buttons: false, delta_y: 10, &block)
       style = NSWindowStyleMaskTitled | NSWindowStyleMaskFullSizeContentView
 
       style = style | NSWindowStyleMaskMiniaturizable if min
@@ -37,7 +37,7 @@ module CocoaWebview
 
       style &= ~NSWindowStyleMaskFullScreen
 
-      webview = new(debug, style, move_title_buttons)
+      webview = new(debug, style, move_title_buttons, delta_y)
       webview.callback = block
       webview
     end
