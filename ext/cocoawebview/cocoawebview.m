@@ -12,6 +12,7 @@ VALUE nsapp_run(VALUE self);
 VALUE nsapp_exit(VALUE self);
 
 VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons, VALUE delta_y);
+VALUE webview_navigate(VALUE self, VALUE url);
 VALUE webview_show(VALUE self);
 VALUE webview_hide(VALUE self);
 VALUE webview_eval(VALUE self, VALUE code);
@@ -127,6 +128,7 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
 - (void)setDeltaY:(int)dy;
 - (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons deltaY:(int)dy;
 - (void)eval:(NSString*)code;
+- (void)navigate:(NSString*)url;
 - (void)setCocoaWebview:(VALUE)view;
 - (void)dragging;
 @end
@@ -217,6 +219,12 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
     [fileDropView setObj:view];
 }
 
+- (void)navigate:(NSString*)url {
+    NSURL *url_ns = [NSURL URLWithString:url];
+    NSURLRequest *request = [NSURLRequest requestWithURL:url_ns];
+    [webView loadRequest:request];
+}
+
 - (void)eval:(NSString*)code {
     [webView evaluateJavaScript:code completionHandler:^(id result, NSError *error) {
         if (error) {
@@ -302,6 +310,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "show", webview_show, 0);
   rb_define_method(rb_mCocoaWebviewClass, "hide", webview_hide, 0);
   rb_define_method(rb_mCocoaWebviewClass, "eval", webview_eval, 1);
+  rb_define_method(rb_mCocoaWebviewClass, "navigate", webview_navigate, 1);
   rb_define_method(rb_mCocoaWebviewClass, "set_size", webview_set_size, 2);
   rb_define_method(rb_mCocoaWebviewClass, "get_size", webview_get_size, 0);
   rb_define_method(rb_mCocoaWebviewClass, "set_pos", webview_set_pos, 2);
@@ -362,6 +371,18 @@ VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_
   rb_ivar_set(self, rb_intern("@webview"), wrapper);
   return self;
 }
+
+VALUE webview_navigate(VALUE self, VALUE url) {
+    const char *url_c = StringValueCStr(url);
+    NSString *url_ns = [[NSString alloc] initWithCString:url_c encoding:NSUTF8StringEncoding];
+
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    [webview navigate:url_ns];
+}
+
 
 VALUE webview_show(VALUE self) {
     VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
