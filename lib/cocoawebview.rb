@@ -23,6 +23,10 @@ module CocoaWebview
     def dock_did_click
       puts "Dock icon clicked"
     end
+
+    def app_will_exit
+      puts "NSApp will exit"
+    end
   end
 
   class CocoaWebview
