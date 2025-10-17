@@ -26,6 +26,7 @@ VALUE webview_center(VALUE self);
 VALUE webview_is_visible(VALUE self);
 VALUE webview_set_topmost(VALUE self, VALUE topmost);
 VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
+VALUE webview_increase_normal_level(VALUE self, VALUE delta);
 
 @interface FileDropContainerView : NSView {
     VALUE rb_cocoawebview;
@@ -127,6 +128,7 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
     FileDropContainerView *fileDropView;
     int deltaY;
 }
+- (void)increaseNormalLevel:(int)delta;
 - (void)setShouldMoveTitleButtons:(BOOL)flag;
 - (void)setDevTool:(BOOL)flag;
 - (void)setDeltaY:(int)dy;
@@ -161,6 +163,10 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a);
                                                    object:self];
     }
     return self;
+}
+
+- (void)increaseNormalLevel:(int)delta {
+    [self setLevel:NSNormalWindowLevel + delta];
 }
 
 - (void)setDeltaY:(int)dy {
@@ -325,7 +331,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mCocoaWebviewClass, "visible?", webview_is_visible, 0);
   rb_define_method(rb_mCocoaWebviewClass, "set_topmost", webview_set_topmost, 1);
   rb_define_method(rb_mCocoaWebviewClass, "set_bg", webview_set_bg, 4);
-
+  rb_define_method(rb_mCocoaWebviewClass, "increase_normal_level", webview_increase_normal_level, 1);
 }
 
 VALUE nsapp_initialize(VALUE self) {
@@ -541,4 +547,13 @@ VALUE webview_set_bg(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a) {
                                          blue:c_b
                                         alpha:c_a];
     [webview setBackgroundColor:rgbColor];
+}
+
+VALUE webview_increase_normal_level(VALUE self, VALUE delta) {
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@webview"));
+    CocoaWebview *webview;
+    TypedData_Get_Struct(wrapper, CocoaWebview, &cocoawebview_obj_type, webview);
+
+    int c_delta = NUM2INT(delta);
+    [webview increaseNormalLevel:c_delta];
 }
