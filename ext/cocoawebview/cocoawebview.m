@@ -11,7 +11,7 @@ VALUE nsapp_initialize(VALUE self);
 VALUE nsapp_run(VALUE self);
 VALUE nsapp_exit(VALUE self);
 
-VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons, VALUE delta_y);
+VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons, VALUE delta_y, VALUE hide_title_bar);
 VALUE webview_navigate(VALUE self, VALUE url);
 VALUE webview_show(VALUE self);
 VALUE webview_hide(VALUE self);
@@ -132,7 +132,7 @@ VALUE webview_increase_normal_level(VALUE self, VALUE delta);
 - (void)setShouldMoveTitleButtons:(BOOL)flag;
 - (void)setDevTool:(BOOL)flag;
 - (void)setDeltaY:(int)dy;
-- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons deltaY:(int)dy;
+- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons deltaY:(int)dy hideTitleBar:(BOOL)hideTitleBar;
 - (void)eval:(NSString*)code;
 - (void)navigate:(NSString*)url;
 - (void)setCocoaWebview:(VALUE)view;
@@ -140,7 +140,7 @@ VALUE webview_increase_normal_level(VALUE self, VALUE delta);
 @end
 
 @implementation CocoaWebview
-- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons deltaY:(int)dy {
+- (id)initWithFrame:(NSRect)frame debug:(BOOL)flag style:(int)style moveTitleButtons:(BOOL)moveTitleButtons deltaY:(int)dy  hideTitleBar:(BOOL)hideTitleBar{
     self = [super initWithContentRect:frame
                             styleMask:style
                               backing:NSBackingStoreBuffered
@@ -150,8 +150,12 @@ VALUE webview_increase_normal_level(VALUE self, VALUE delta);
         [self setTitle:@"My Custom Window"];
         [self setDevTool:flag];
         [self setDeltaY:dy];
-        [self setTitlebarAppearsTransparent: YES];
-        [self setTitleVisibility:NSWindowTitleHidden];
+        if (hideTitleBar) {
+            [self setTitlebarAppearsTransparent: YES];
+            [self setTitleVisibility:NSWindowTitleHidden];
+        } else {
+            [self setTitlebarAppearsTransparent: NO];
+        }
         [self addWebViewToWindow:self];
         [self setShouldMoveTitleButtons:moveTitleButtons];
         if (moveTitleButtons) {
@@ -316,7 +320,7 @@ Init_cocoawebview(void)
 
   /* CocoaWebview */
   rb_mCocoaWebviewClass = rb_define_class_under(rb_mCocoawebview, "CocoaWebview", rb_cObject);
-  rb_define_method(rb_mCocoaWebviewClass, "initialize", webview_initialize, 4);
+  rb_define_method(rb_mCocoaWebviewClass, "initialize", webview_initialize, 5);
   rb_define_method(rb_mCocoaWebviewClass, "show", webview_show, 0);
   rb_define_method(rb_mCocoaWebviewClass, "hide", webview_hide, 0);
   rb_define_method(rb_mCocoaWebviewClass, "eval", webview_eval, 1);
@@ -351,7 +355,7 @@ VALUE nsapp_exit(VALUE self) {
     [[NSApplication sharedApplication] terminate:nil];
 }
 
-VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons, VALUE delta_y) {
+VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons, VALUE delta_y, VALUE hide_title_bar) {
   rb_iv_set(self, "@var", rb_hash_new());
   rb_iv_set(self, "@bindings", rb_hash_new());
   BOOL flag = NO;
@@ -367,9 +371,15 @@ VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_
   } else {
     c_move_title_buttons = NO;
   }
+  BOOL c_hide_title_bar = NO;
+  if (hide_title_bar == Qtrue) {
+    c_hide_title_bar = YES;
+  } else {
+    c_hide_title_bar = NO;
+  }
   int c_style = NUM2INT(style);
   int c_delta_y = NUM2INT(delta_y);
-  CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500) debug:flag style:c_style moveTitleButtons:c_move_title_buttons deltaY:c_delta_y];
+  CocoaWebview *webview = [[CocoaWebview alloc] initWithFrame:NSMakeRect(100, 100, 400, 500) debug:flag style:c_style moveTitleButtons:c_move_title_buttons deltaY:c_delta_y hideTitleBar:c_hide_title_bar];
 
   [webview setReleasedWhenClosed:NO];
   [webview setCocoaWebview:self];
