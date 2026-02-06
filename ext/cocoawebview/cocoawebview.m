@@ -4,12 +4,21 @@
 
 VALUE rb_mCocoawebview;
 VALUE rb_mNSAppClass = Qnil;
+VALUE rb_mNSMenuClass = Qnil;
 VALUE rb_mCocoaWebviewClass = Qnil;
 NSApplication *application = nil;
 
 VALUE nsapp_initialize(VALUE self);
 VALUE nsapp_run(VALUE self);
 VALUE nsapp_exit(VALUE self);
+
+VALUE nsmenu_initialize(VALUE self);
+VALUE nsmenu_new_menu_item(VALUE self);
+VALUE nsmenu_create_menu_item(VALUE self, VALUE title, VALUE tag, VALUE key);
+VALUE nsmenu_new_menu(VALUE self);
+VALUE nsmenu_add_item_to_menu(VALUE self, VALUE item, VALUE menu);
+VALUE nsmenu_set_submenu_to_menu(VALUE self, VALUE submenu, VALUE menu);
+VALUE nsmenu_show(VALUE self);
 
 VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons, VALUE delta_y, VALUE hide_title_bar);
 VALUE webview_navigate(VALUE self, VALUE url);
@@ -95,12 +104,44 @@ VALUE webview_increase_normal_level(VALUE self, VALUE delta);
 @end
 
 
+@interface Menu : NSObject {
+    
+}
+
+@property (nonatomic, strong) NSMenu *mainMenu;
+@end
+
+@implementation Menu
+
+@end
+
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     VALUE app;
 }
 @end
 
 @implementation AppDelegate
+
+- (void)handleMenuAction:(id)sender {
+    NSMenuItem *item = (NSMenuItem *)sender;
+    NSInteger tag = [item tag];
+
+    // Route logic based on the tag
+    switch (tag) {
+        case 100: // New File
+            NSLog(@"Creating a new file...");
+            break;
+        case 101: // Save
+            NSLog(@"Saving data...");
+            break;
+        case 999: // Quit
+            [NSApp terminate:nil];
+            break;
+        default:
+            NSLog(@"Clicked: %@", [item title]);
+            break;
+    }
+}
 
 - (void)setApp:(VALUE)a {
     app = a;
@@ -306,6 +347,16 @@ static const rb_data_type_t cocoawebview_obj_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+static void menu_obj_free(void *ptr) {
+
+}
+
+static const rb_data_type_t menu_obj_type = {
+    "MenuWrapper",
+    { 0, menu_obj_free, 0 },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 
 RUBY_FUNC_EXPORTED void
 Init_cocoawebview(void)
@@ -317,6 +368,17 @@ Init_cocoawebview(void)
   rb_define_method(rb_mNSAppClass, "initialize", nsapp_initialize, 0);
   rb_define_method(rb_mNSAppClass, "run", nsapp_run, 0);
   rb_define_method(rb_mNSAppClass, "exit", nsapp_exit, 0);
+
+  /* Menu */
+  rb_mNSMenuClass = rb_define_class_under(rb_mCocoawebview, "NSMenu", rb_cObject);
+  rb_define_method(rb_mNSMenuClass, "initialize", nsmenu_initialize, 0);
+  rb_define_method(rb_mNSMenuClass, "new_menu", nsmenu_new_menu, 0);
+  rb_define_method(rb_mNSMenuClass, "new_menu_item", nsmenu_new_menu_item, 0);
+  rb_define_method(rb_mNSMenuClass, "create_menu_item", nsmenu_create_menu_item, 3);
+  rb_define_method(rb_mNSMenuClass, "add_item_to_menu", nsmenu_add_item_to_menu, 2);
+  rb_define_method(rb_mNSMenuClass, "set_submenu_to_menu", nsmenu_set_submenu_to_menu, 2);
+  rb_define_method(rb_mNSMenuClass, "show", nsmenu_show, 0);
+
 
   /* CocoaWebview */
   rb_mCocoaWebviewClass = rb_define_class_under(rb_mCocoawebview, "CocoaWebview", rb_cObject);
@@ -353,6 +415,81 @@ VALUE nsapp_run(VALUE self) {
 
 VALUE nsapp_exit(VALUE self) {
     [[NSApplication sharedApplication] terminate:nil];
+}
+
+VALUE nsmenu_initialize(VALUE self) {
+  rb_iv_set(self, "@var", rb_hash_new());
+  Menu *menu = [[Menu alloc] init];
+  menu.mainMenu = [NSMenu new];
+
+  // Wrap the Objective-C pointer into a Ruby object
+  VALUE wrapper = TypedData_Wrap_Struct(rb_cObject, &menu_obj_type, menu);
+
+  // Store the wrapper in an instance variable
+  rb_ivar_set(self, rb_intern("@menu"), wrapper);
+
+  VALUE wrapper2 = TypedData_Wrap_Struct(rb_cObject, &menu_obj_type, menu.mainMenu);
+  rb_ivar_set(self, rb_intern("@menu_bar"), wrapper2);
+
+  return self;
+}
+
+VALUE nsmenu_new_menu_item(VALUE self) {
+    NSMenuItem *menuItem = [NSMenuItem new];
+    // Wrap the Objective-C pointer into a Ruby object
+    VALUE wrapper = TypedData_Wrap_Struct(rb_cObject, &menu_obj_type, menuItem);
+    return wrapper;
+}
+
+VALUE nsmenu_create_menu_item(VALUE self, VALUE title, VALUE tag, VALUE key) {
+  int c_tag = NUM2INT(tag);
+  const char *title_c = StringValueCStr(title);
+  NSString *title_ns = [[NSString alloc] initWithCString:title_c encoding:NSUTF8StringEncoding];
+
+  const char *key_c = StringValueCStr(key);
+  NSString *key_ns = [[NSString alloc] initWithCString:key_c encoding:NSUTF8StringEncoding];
+
+  NSMenuItem *menuItem = [[NSMenuItem alloc] initWithTitle:title_ns
+                                                          action:@selector(handleMenuAction:) 
+                                                          keyEquivalent:key_ns];
+
+  [menuItem setTag:c_tag];
+
+  VALUE wrapper = TypedData_Wrap_Struct(rb_cObject, &menu_obj_type, menuItem);
+  return wrapper;
+}
+
+VALUE nsmenu_new_menu(VALUE self) {
+    NSMenu *menu = [NSMenu new];
+    // Wrap the Objective-C pointer into a Ruby object
+    VALUE wrapper = TypedData_Wrap_Struct(rb_cObject, &menu_obj_type, menu);
+    return wrapper;
+}
+
+VALUE nsmenu_add_item_to_menu(VALUE self, VALUE item, VALUE menu) {
+    NSMenuItem *item_ns;
+    NSMenu *menu_ns;
+    TypedData_Get_Struct(item, NSMenuItem, &menu_obj_type, item_ns);
+    TypedData_Get_Struct(menu, NSMenu, &menu_obj_type, menu_ns);
+    [menu_ns addItem:item_ns];
+}
+
+VALUE nsmenu_set_submenu_to_menu(VALUE self, VALUE submenu, VALUE menu) {
+    NSMenu *submenu_ns;
+    NSMenu *menu_ns;
+    TypedData_Get_Struct(submenu, NSMenu, &menu_obj_type, submenu_ns);
+    TypedData_Get_Struct(menu, NSMenu, &menu_obj_type, menu_ns);
+    [menu_ns setSubmenu:submenu_ns];
+}
+
+VALUE nsmenu_show(VALUE self) {
+    NSApplication *app = [NSApplication sharedApplication];
+    [app setActivationPolicy:NSApplicationActivationPolicyRegular];
+
+    VALUE wrapper = rb_ivar_get(self, rb_intern("@menu"));
+    Menu *menu;
+    TypedData_Get_Struct(wrapper, Menu, &menu_obj_type, menu);
+    [app setMainMenu:menu.mainMenu];
 }
 
 VALUE webview_initialize(VALUE self, VALUE debug, VALUE style, VALUE move_title_buttons, VALUE delta_y, VALUE hide_title_bar) {

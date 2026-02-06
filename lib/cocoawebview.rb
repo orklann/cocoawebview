@@ -14,6 +14,16 @@ module CocoaWebview
 
   class Error < StandardError; end
   # Your code goes here...
+  
+  class NSMenu
+    def main_menu
+      @menu
+    end
+
+    def main_menu_bar
+      @menu_bar
+    end
+  end
 
   class NSApp
     def app_did_launch
