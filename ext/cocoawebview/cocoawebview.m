@@ -14,6 +14,8 @@ VALUE nsapp_exit(VALUE self);
 
 VALUE nsmenu_initialize(VALUE self);
 VALUE nsmenu_new_menu_item(VALUE self);
+VALUE nsmenu_menu_item_set_target(VALUE self, VALUE menu_item, VALUE target);
+VALUE nsmenu_menu_item_set_action(VALUE self, VALUE menu_item, VALUE action);
 VALUE nsmenu_new_separator_item(VALUE self);
 VALUE nsmenu_create_menu_item(VALUE self, VALUE title, VALUE tag, VALUE key);
 VALUE nsmenu_new_menu(VALUE self);
@@ -365,6 +367,8 @@ Init_cocoawebview(void)
   rb_mNSMenuClass = rb_define_class_under(rb_mCocoawebview, "NSMenu", rb_cObject);
   rb_define_method(rb_mNSMenuClass, "initialize", nsmenu_initialize, 0);
   rb_define_method(rb_mNSMenuClass, "new_menu", nsmenu_new_menu, 0);
+  rb_define_method(rb_mNSMenuClass, "set_menu_item_action", nsmenu_menu_item_set_action, 2);
+  rb_define_method(rb_mNSMenuClass, "set_menu_item_target", nsmenu_menu_item_set_target, 2);
   rb_define_method(rb_mNSMenuClass, "new_menu_item", nsmenu_new_menu_item, 0);
   rb_define_method(rb_mNSMenuClass, "new_separator", nsmenu_new_separator_item, 0);
   rb_define_method(rb_mNSMenuClass, "create_menu_item", nsmenu_create_menu_item, 3);
@@ -430,6 +434,32 @@ VALUE nsmenu_initialize(VALUE self) {
   rb_ivar_set(self, rb_intern("@menu_bar"), wrapper2);
 
   return self;
+}
+
+VALUE nsmenu_menu_item_set_target(VALUE self, VALUE menu_item, VALUE target) {
+    NSMenuItem *item_ns;
+    TypedData_Get_Struct(menu_item, NSMenuItem, &menu_obj_type, item_ns);
+
+    if (NIL_P(target)) {
+        item_ns.target = nil;
+    } else {
+        id target_ns;
+        TypedData_Get_Struct(target, void, &menu_obj_type, target_ns);
+        item_ns.target = target_ns;
+    }
+    return Qnil;   
+}
+
+VALUE nsmenu_menu_item_set_action(VALUE self, VALUE menu_item, VALUE action) {
+    NSMenuItem *item_ns;
+    const char *action_c = StringValueCStr(action);
+    NSString *action_ns = [[NSString alloc] initWithCString:action_c encoding:NSUTF8StringEncoding];
+
+    TypedData_Get_Struct(menu_item, NSMenuItem, &menu_obj_type, item_ns);
+
+    item_ns.action = NSSelectorFromString(action_ns);
+
+    return Qnil;   
 }
 
 VALUE nsmenu_new_separator_item(VALUE self) {
