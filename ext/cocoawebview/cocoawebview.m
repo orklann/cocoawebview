@@ -14,6 +14,7 @@ VALUE nsapp_exit(VALUE self);
 
 VALUE nsmenu_initialize(VALUE self);
 VALUE nsmenu_new_menu_item(VALUE self);
+VALUE nsmenu_new_separator_item(VALUE self);
 VALUE nsmenu_create_menu_item(VALUE self, VALUE title, VALUE tag, VALUE key);
 VALUE nsmenu_new_menu(VALUE self);
 VALUE nsmenu_add_item_to_menu(VALUE self, VALUE item, VALUE menu);
@@ -365,6 +366,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mNSMenuClass, "initialize", nsmenu_initialize, 0);
   rb_define_method(rb_mNSMenuClass, "new_menu", nsmenu_new_menu, 0);
   rb_define_method(rb_mNSMenuClass, "new_menu_item", nsmenu_new_menu_item, 0);
+  rb_define_method(rb_mNSMenuClass, "new_separator", nsmenu_new_separator_item, 0);
   rb_define_method(rb_mNSMenuClass, "create_menu_item", nsmenu_create_menu_item, 3);
   rb_define_method(rb_mNSMenuClass, "add_item_to_menu", nsmenu_add_item_to_menu, 2);
   rb_define_method(rb_mNSMenuClass, "set_submenu_to_menu", nsmenu_set_submenu_to_menu, 2);
@@ -428,6 +430,13 @@ VALUE nsmenu_initialize(VALUE self) {
   rb_ivar_set(self, rb_intern("@menu_bar"), wrapper2);
 
   return self;
+}
+
+VALUE nsmenu_new_separator_item(VALUE self) {
+    NSMenuItem *menuItem = [NSMenuItem separatorItem];
+    // Wrap the Objective-C pointer into a Ruby object
+    VALUE wrapper = TypedData_Wrap_Struct(rb_cObject, &menu_obj_type, menuItem);
+    return wrapper;
 }
 
 VALUE nsmenu_new_menu_item(VALUE self) {
