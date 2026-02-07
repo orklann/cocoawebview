@@ -117,6 +117,7 @@ VALUE webview_increase_normal_level(VALUE self, VALUE delta);
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
     VALUE app;
+    VALUE rb_menu;
 }
 @end
 
@@ -125,26 +126,16 @@ VALUE webview_increase_normal_level(VALUE self, VALUE delta);
 - (void)handleMenuAction:(id)sender {
     NSMenuItem *item = (NSMenuItem *)sender;
     NSInteger tag = [item tag];
-
-    // Route logic based on the tag
-    switch (tag) {
-        case 100: // New File
-            NSLog(@"Creating a new file...");
-            break;
-        case 101: // Save
-            NSLog(@"Saving data...");
-            break;
-        case 999: // Quit
-            [NSApp terminate:nil];
-            break;
-        default:
-            NSLog(@"Clicked: %@", [item title]);
-            break;
-    }
+    VALUE rb_tag = INT2NUM(tag);
+    rb_funcall(rb_menu, rb_intern("handle_menu_action"), 1, rb_tag);
 }
 
 - (void)setApp:(VALUE)a {
     app = a;
+}
+
+- (void)setMenu:(VALUE)m {
+    rb_menu = m;
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification {
@@ -419,8 +410,13 @@ VALUE nsapp_exit(VALUE self) {
 
 VALUE nsmenu_initialize(VALUE self) {
   rb_iv_set(self, "@var", rb_hash_new());
+  rb_iv_set(self, "@bindings", rb_hash_new());
+
   Menu *menu = [[Menu alloc] init];
   menu.mainMenu = [NSMenu new];
+
+  AppDelegate *delegate = application.delegate;
+  [delegate setMenu:self];
 
   // Wrap the Objective-C pointer into a Ruby object
   VALUE wrapper = TypedData_Wrap_Struct(rb_cObject, &menu_obj_type, menu);

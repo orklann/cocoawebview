@@ -16,12 +16,22 @@ module CocoaWebview
   # Your code goes here...
   
   class NSMenu
+    def create_menu_item_with(title, tag, key, &block)
+      @bindings[tag] = block
+      create_menu_item(title, tag, key)
+    end
+
     def main_menu
       @menu
     end
 
     def main_menu_bar
       @menu_bar
+    end
+
+    def handle_menu_action(tag)
+      callback = @bindings[tag]
+      callback.call
     end
   end
 
