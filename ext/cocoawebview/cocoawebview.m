@@ -10,6 +10,7 @@ NSApplication *application = nil;
 
 VALUE nsapp_initialize(VALUE self);
 VALUE nsapp_run(VALUE self);
+VALUE nsapp_get_theme(VALUE self);
 VALUE nsapp_exit(VALUE self);
 
 VALUE nsmenu_initialize(VALUE self);
@@ -361,6 +362,7 @@ Init_cocoawebview(void)
   rb_mNSAppClass = rb_define_class_under(rb_mCocoawebview, "NSApp", rb_cObject);
   rb_define_method(rb_mNSAppClass, "initialize", nsapp_initialize, 0);
   rb_define_method(rb_mNSAppClass, "run", nsapp_run, 0);
+  rb_define_method(rb_mNSAppClass, "get_theme", nsapp_get_theme, 0);
   rb_define_method(rb_mNSAppClass, "exit", nsapp_exit, 0);
 
   /* Menu */
@@ -408,6 +410,19 @@ VALUE nsapp_initialize(VALUE self) {
 
 VALUE nsapp_run(VALUE self) {
     [application run];
+}
+
+VALUE nsapp_get_theme(VALUE self) {
+    NSString *theme = [[NSUserDefaults standardUserDefaults]
+                       stringForKey:@"AppleInterfaceStyle"];
+
+    if (!theme) {
+        // Light mode
+        return rb_utf8_str_new_cstr("Light");
+    }
+
+    const char *utf8 = [theme UTF8String];
+    return rb_utf8_str_new_cstr(utf8);
 }
 
 VALUE nsapp_exit(VALUE self) {
