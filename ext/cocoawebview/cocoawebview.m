@@ -11,6 +11,7 @@ NSApplication *application = nil;
 VALUE nsapp_initialize(VALUE self);
 VALUE nsapp_run(VALUE self);
 VALUE nsapp_get_theme(VALUE self);
+VALUE nsapp_get_app_icon(VALUE self, VALUE app_path);
 VALUE nsapp_exit(VALUE self);
 
 VALUE nsmenu_initialize(VALUE self);
@@ -363,6 +364,7 @@ Init_cocoawebview(void)
   rb_define_method(rb_mNSAppClass, "initialize", nsapp_initialize, 0);
   rb_define_method(rb_mNSAppClass, "run", nsapp_run, 0);
   rb_define_method(rb_mNSAppClass, "get_theme", nsapp_get_theme, 0);
+  rb_define_method(rb_mNSAppClass, "get_app_icon", nsapp_get_app_icon, 1);
   rb_define_method(rb_mNSAppClass, "exit", nsapp_exit, 0);
 
   /* Menu */
@@ -423,6 +425,33 @@ VALUE nsapp_get_theme(VALUE self) {
 
     const char *utf8 = [theme UTF8String];
     return rb_utf8_str_new_cstr(utf8);
+}
+
+VALUE nsapp_get_app_icon(VALUE self, VALUE app_path) {
+    const char *app_path_c = StringValueCStr(app_path);
+    NSString *app_path_ns = [[NSString alloc] initWithCString:app_path_c encoding:NSUTF8StringEncoding];
+
+    // 1. Get icon for the app bundle
+    NSImage *icon = [[NSWorkspace sharedWorkspace] iconForFile:app_path_ns];
+    if (!icon) return Qnil;
+
+    // Optional: set desired size
+    [icon setSize:NSMakeSize(256, 256)];
+
+    // 2. Convert NSImage to PNG data
+    NSBitmapImageRep *rep = [[NSBitmapImageRep alloc]
+        initWithData:[icon TIFFRepresentation]];
+
+    NSData *pngData = [rep representationUsingType:NSBitmapImageFileTypePNG
+                                        properties:@{}];
+    if (!pngData) return Qnil;
+
+    // 3. Encode to Base64 string
+    NSString *base64 = [pngData base64EncodedStringWithOptions:0];
+    const char *utf8 = [base64 UTF8String];
+    if (!utf8) return Qnil;
+
+    return rb_utf8_str_new(utf8, strlen(utf8));
 }
 
 VALUE nsapp_exit(VALUE self) {
